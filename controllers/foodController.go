@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,7 +16,7 @@ func GetFoods() gin.HandlerFunc {
 
 func GetFood() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		fmt.Println("GetFood")
+		context.WithTimeout(context.Background(), 100*time.Second)
 	}
 }
 
