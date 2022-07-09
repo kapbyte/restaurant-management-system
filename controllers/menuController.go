@@ -77,9 +77,10 @@ func CreateMenu() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Menu item was not created"})
 			return
 		}
+		
 		defer cancel()
 		c.JSON(http.StatusOK, result)
-		defer cancel()
+		// defer cancel()
 	}
 }
 
