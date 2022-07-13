@@ -45,11 +45,36 @@ func GetOrderItems() gin.HandlerFunc {
 
 func GetOrderItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 
+		orderItemId := c.Param("order_item_id")
+		var orderItem models.OrderItem
+
+		err := orderItemCollection.FindOne(ctx, bson.M{"orderItem_id": orderItemId}).Decode(&orderItem)
+		defer cancel()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while fetching order by id..."})
+			return
+		}
+
+		c.JSON(http.StatusOK, orderItem)
 	}
 }
 
-func GetOrderItemsByOrder(id string) (OrderItems []primitive.M, err error) {
+func GetOrderItemsByOrder() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		orderId := c.Param("order_id")
+
+		allOrderItems, err := ItemsByOrder(orderId)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error occured while listing order by order id"})
+			return
+		}
+		c.JSON(http.StatusOK, allOrderItems)
+	}
+}
+
+func ItemsByOrder(id string) (OrderItems []primitive.M, err error) {
 
 }
 
