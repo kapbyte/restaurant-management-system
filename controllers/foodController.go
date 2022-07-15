@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"golang-restaurant-management/database"
 	"golang-restaurant-management/models"
 	"log"
@@ -16,6 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var foodCollection *mongo.Collection = database.OpenCollection(database.Client, "food")
@@ -39,7 +39,7 @@ func GetFoods() gin.HandlerFunc {
 		startIndex, err = strconv.Atoi(c.Query("startIndex"))
 
 		matchStage := bson.D{{"$match", bson.D{{}}}}
-		groupStage := bson.D{{"$group", bson.D{{"_id", bson.D{{"_id", "null"}}}, {"total_count", bson.D{{"$sum, 1"}}}, {"data", bson.D{{"$push", "$$ROOT"}}} }}}
+		groupStage := bson.D{{"$group", bson.D{{"_id", bson.D{{"_id", "null"}}}, {"total_count", bson.D{{"$sum", 1}}}, {"data", bson.D{{"$push", "$$ROOT"}}}}}}
 		projectStage := bson.D{
 			{
 				"$project", bson.D{
@@ -59,7 +59,7 @@ func GetFoods() gin.HandlerFunc {
 			return
 		}
 
-		var allFoods bson.M
+		var allFoods []bson.M
 		if err = result.All(ctx, &allFoods); err != nil {
 			log.Fatal(err)
 		}
@@ -112,7 +112,7 @@ func CreateFood() gin.HandlerFunc {
 		food.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		food.ID = primitive.NewObjectID()
 		food.Food_id = food.ID.Hex()
-		var num = toFixed(*&food.Price, 2)
+		var num = toFixed(*food.Price, 2)
 		food.Price = &num
 
 		result, insertErr := foodCollection.InsertOne(ctx, food)
@@ -149,26 +149,26 @@ func UpdateFood() gin.HandlerFunc {
 		var updateObj primitive.D
 
 		if food.Name != nil {
-			updateObj = append(updateObj, bson.E{"name": food.Name})
+			updateObj = append(updateObj, bson.E{"name", food.Name})
 		}
 
 		if food.Price != nil {
-			updateObj = append(updateObj, bson.E{"price": food.Price})
+			updateObj = append(updateObj, bson.E{"price", food.Price})
 		}
 
 		if food.Food_image != nil {
-			updateObj = append(updateObj, bson.E{"food_image": food.Food_image})
+			updateObj = append(updateObj, bson.E{"food_image", food.Food_image})
 		}
 
 		if food.Menu_id != nil {
-			err := menuCollection.FindOne(ctx, bson.E{"menu_id": food.Menu_id}).Decode(&menu)
+			err := menuCollection.FindOne(ctx, bson.E{"menu_id", food.Menu_id}).Decode(&menu)
 			defer cancel()
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "menu was not found"})
 				return
 			}
 
-			updateObj = append(updateObj, bson.E{"menu": food.Price})
+			updateObj = append(updateObj, bson.E{"menu", food.Price})
 		}
 
 		food.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
@@ -185,7 +185,7 @@ func UpdateFood() gin.HandlerFunc {
 			ctx,
 			filter,
 			bson.D{
-				{"$set": updateObj}
+				{"$set", updateObj},
 			},
 			&opt,
 		)

@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"golang-restaurant-management/database"
-	"golang-restaurant-management/middleware"
-	"golang-restaurant-management/routes"
+	middleware "golang-restaurant-management/middleware"
+	routes "golang-restaurant-management/routes"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -23,7 +23,7 @@ func main() {
 	router.Use(gin.Logger())
 
 	routes.UserRoutes(router)
-	router.Use(middleware.Authentication())
+	router.Use(middleware.Authenticate())
 
 	routes.FoodRoutes(router)
 	routes.InvoiceRoutes(router)

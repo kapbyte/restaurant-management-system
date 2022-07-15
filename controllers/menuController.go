@@ -77,14 +77,14 @@ func CreateMenu() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Menu item was not created"})
 			return
 		}
-		
+
 		defer cancel()
 		c.JSON(http.StatusOK, result)
 		// defer cancel()
 	}
 }
 
-func inTimeSpan(start, end, check time.Time) (bool) {
+func inTimeSpan(start, end, check time.Time) bool {
 	return start.After(time.Now()) && end.After(start)
 }
 
@@ -130,14 +130,14 @@ func UpdateMenu() gin.HandlerFunc {
 				Upsert: &upsert,
 			}
 
-			result, err := menuCollection.updateOne {
+			result, err := menuCollection.UpdateOne(
 				ctx,
 				filter,
 				bson.D{
-					{"$set": updateObj},
+					{"$set", updateObj},
 				},
-				&opt
-			}
+				&opt,
+			)
 
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update menu"})
