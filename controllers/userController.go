@@ -12,7 +12,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -22,6 +21,7 @@ var userCollection *mongo.Collection = database.OpenCollection(database.Client, 
 func GetUsers() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		recordPerPage, err := strconv.Atoi(c.Query("recordPerPage"))
 		if err != nil || recordPerPage < 1 {
@@ -71,6 +71,7 @@ func GetUsers() gin.HandlerFunc {
 func GetUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		userId := c.Param("user_id")
 		var user models.User
@@ -89,6 +90,7 @@ func GetUser() gin.HandlerFunc {
 func Signup() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		var user models.User
 
@@ -104,10 +106,14 @@ func Signup() gin.HandlerFunc {
 		}
 
 		count, err := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
-		defer cancel()
 		if err != nil {
 			log.Panic(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error occured while checking the email"})
+			return
+		}
+
+		if count > 0 {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "This email already exists"})
 			return
 		}
 
@@ -115,7 +121,6 @@ func Signup() gin.HandlerFunc {
 		user.Password = &hashedPassword
 
 		count, err = userCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
-		defer cancel()
 		if err != nil {
 			log.Panic(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error occured while checking the phone number"})
@@ -123,34 +128,37 @@ func Signup() gin.HandlerFunc {
 		}
 
 		if count > 0 {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "This email or phone number already exists"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "This phone number already exists"})
 			return
 		}
 
 		// Update user details
-		user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-		user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-		user.ID = primitive.NewObjectID()
-		user.User_id = user.ID.Hex()
-		token, refreshToken, _ := helpers.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, user.User_id)
-		user.Token = &token
-		user.Refresh_Token = &refreshToken
+		// user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		// user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		// user.ID = primitive.NewObjectID()
+		// user.User_id = user.ID.Hex()
+		// token, refreshToken, _ := helpers.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, user.User_id)
+		// user.Token = &token
+		// user.Refresh_Token = &refreshToken
 
-		// Save to MongoDB
-		resultInsertionNumber, insertErr := userCollection.InsertOne(ctx, user)
-		if insertErr != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "User item could not be created"})
-			return
-		}
+		// // Save to MongoDB
+		// resultInsertionNumber, insertErr := userCollection.InsertOne(ctx, user)
+		// if insertErr != nil {
+		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "User item could not be created"})
+		// 	return
+		// }
+
+		token, _, _ := helpers.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, user.User_id)
 
 		defer cancel()
-		c.JSON(http.StatusOK, resultInsertionNumber)
+		c.JSON(http.StatusOK, gin.H{"token": token, "message": "Verification token sent to your email"})
 	}
 }
 
 func Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		var user models.User
 		var foundUser models.User
@@ -161,14 +169,12 @@ func Login() gin.HandlerFunc {
 		}
 
 		err := userCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&foundUser)
-		defer cancel()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found, details not correct"})
 			return
 		}
 
 		passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
-		defer cancel()
 		if !passwordIsValid {
 			c.JSON(http.StatusBadRequest, gin.H{"error": msg})
 			return
@@ -180,8 +186,8 @@ func Login() gin.HandlerFunc {
 		// Update tokens - token and refresh_token
 		helpers.UpdateAllTokens(token, refreshToken, foundUser.User_id)
 
+		defer cancel()
 		c.JSON(http.StatusOK, foundUser)
-
 	}
 }
 

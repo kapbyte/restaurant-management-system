@@ -20,8 +20,9 @@ var menuCollection *mongo.Collection = database.OpenCollection(database.Client, 
 func GetMenus() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-		result, err := menuCollection.Find(context.TODO(), bson.M{})
 		defer cancel()
+
+		result, err := menuCollection.Find(context.TODO(), bson.M{})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error occurred while listing the menus"})
 			return
@@ -31,6 +32,8 @@ func GetMenus() gin.HandlerFunc {
 		if err = result.All(ctx, &allMenus); err != nil {
 			log.Fatal(err)
 		}
+
+		defer cancel()
 		c.JSON(http.StatusOK, allMenus)
 	}
 }
@@ -38,15 +41,18 @@ func GetMenus() gin.HandlerFunc {
 func GetMenu() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
 		menuId := c.Param("menu_id")
 		var menu models.Menu
 
 		err := foodCollection.FindOne(ctx, bson.M{"menu_id": menuId}).Decode(&menu)
-		defer cancel()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error occured while fetching menu id"})
 			return
 		}
+
+		defer cancel()
 		c.JSON(http.StatusOK, menu)
 	}
 }
@@ -54,6 +60,8 @@ func GetMenu() gin.HandlerFunc {
 func CreateMenu() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
 		var menu models.Menu
 
 		if err := c.BindJSON(&menu); err != nil {
@@ -80,7 +88,6 @@ func CreateMenu() gin.HandlerFunc {
 
 		defer cancel()
 		c.JSON(http.StatusOK, result)
-		// defer cancel()
 	}
 }
 
@@ -91,6 +98,8 @@ func inTimeSpan(start, end, check time.Time) bool {
 func UpdateMenu() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
 		var menu models.Menu
 
 		if err := c.BindJSON(&menu); err != nil {

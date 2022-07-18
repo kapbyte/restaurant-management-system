@@ -31,6 +31,7 @@ var invoiceCollection *mongo.Collection = database.OpenCollection(database.Clien
 func GetInvoices() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		result, err := invoiceCollection.Find(context.TODO(), bson.M{})
 		if err != nil {
@@ -51,12 +52,12 @@ func GetInvoices() gin.HandlerFunc {
 func GetInvoice() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		invoiceId := c.Param("invoice_id")
 		var invoice models.Invoice
 
 		err := invoiceCollection.FindOne(ctx, bson.M{"invoice_id": invoiceId}).Decode(&invoice)
-		defer cancel()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error occured while fetching invoice"})
 			return
@@ -79,6 +80,7 @@ func GetInvoice() gin.HandlerFunc {
 		invoiceView.Table_number = allOrderItems[0]["table_number"]
 		invoiceView.Order_details = allOrderItems[0]["order_details"]
 
+		defer cancel()
 		c.JSON(http.StatusOK, invoiceView)
 	}
 }
@@ -86,6 +88,7 @@ func GetInvoice() gin.HandlerFunc {
 func CreateInvoice() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		var invoice models.Invoice
 		var order models.Order
@@ -96,7 +99,6 @@ func CreateInvoice() gin.HandlerFunc {
 		}
 
 		err := orderCollection.FindOne(ctx, bson.M{"order_id": invoice.Order_id}).Decode(&order)
-		defer cancel()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Order was not found"})
 			return
@@ -133,6 +135,7 @@ func CreateInvoice() gin.HandlerFunc {
 func UpdateInvoice() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		var invoice models.Invoice
 		invoiceId := c.Param("invoice_id")

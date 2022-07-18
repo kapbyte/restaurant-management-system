@@ -25,10 +25,9 @@ var orderItemCollection *mongo.Collection = database.OpenCollection(database.Cli
 func GetOrderItems() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		result, err := orderCollection.Find(context.TODO(), bson.M{})
-
-		defer cancel()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while fetching order items list"})
 			return
@@ -40,6 +39,7 @@ func GetOrderItems() gin.HandlerFunc {
 			return
 		}
 
+		defer cancel()
 		c.JSON(http.StatusOK, allOrderItems)
 	}
 }
@@ -47,17 +47,18 @@ func GetOrderItems() gin.HandlerFunc {
 func GetOrderItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		orderItemId := c.Param("order_item_id")
 		var orderItem models.OrderItem
 
 		err := orderItemCollection.FindOne(ctx, bson.M{"orderItem_id": orderItemId}).Decode(&orderItem)
-		defer cancel()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error while fetching order by id..."})
 			return
 		}
 
+		defer cancel()
 		c.JSON(http.StatusOK, orderItem)
 	}
 }
@@ -77,6 +78,7 @@ func GetOrderItemsByOrder() gin.HandlerFunc {
 
 func ItemsByOrder(id string) (OrderItems []primitive.M, err error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
 
 	matchstage := bson.D{{"$match", bson.D{{"order_id", id}}}}
 	lookupStage := bson.D{{"$lookup", bson.D{{"from", "food"}, {"localField", "food_id"}, {"foreignField", "food_id"}, {"as", "food"}}}}
@@ -148,6 +150,7 @@ func ItemsByOrder(id string) (OrderItems []primitive.M, err error) {
 func CreateOrderItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		var orderItemPack OrderItemPack
 		var order models.Order
@@ -196,6 +199,7 @@ func CreateOrderItem() gin.HandlerFunc {
 func UpdateOrderItem() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
 
 		var orderItem models.OrderItem
 
