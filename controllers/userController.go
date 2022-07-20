@@ -151,7 +151,7 @@ func Signup() gin.HandlerFunc {
 		token, _, _ := helpers.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, user.User_id)
 
 		defer cancel()
-		c.JSON(http.StatusOK, gin.H{"token": token, "message": "Verification token sent to your email"})
+		c.JSON(http.StatusOK, gin.H{"token": token, "message": "Verification token sent to your email."})
 	}
 }
 
