@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -133,25 +134,23 @@ func Signup() gin.HandlerFunc {
 		}
 
 		// Update user details
-		// user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-		// user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-		// user.ID = primitive.NewObjectID()
-		// user.User_id = user.ID.Hex()
-		// token, refreshToken, _ := helpers.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, user.User_id)
-		// user.Token = &token
-		// user.Refresh_Token = &refreshToken
+		user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		user.ID = primitive.NewObjectID()
+		user.User_id = user.ID.Hex()
+		token, refreshToken, _ := helpers.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, user.User_id)
+		user.Token = &token
+		user.Refresh_Token = &refreshToken
 
-		// // Save to MongoDB
-		// resultInsertionNumber, insertErr := userCollection.InsertOne(ctx, user)
-		// if insertErr != nil {
-		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "User item could not be created"})
-		// 	return
-		// }
-
-		token, _, _ := helpers.GenerateAllTokens(*user.Email, *user.First_name, *user.Last_name, user.User_id)
+		// Save to MongoDB
+		resultInsertionNumber, insertErr := userCollection.InsertOne(ctx, user)
+		if insertErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "User item could not be created"})
+			return
+		}
 
 		defer cancel()
-		c.JSON(http.StatusOK, gin.H{"token": token, "message": "Verification token sent to your email."})
+		c.JSON(http.StatusOK, resultInsertionNumber)
 	}
 }
 
