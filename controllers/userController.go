@@ -37,14 +37,14 @@ func GetUsers() gin.HandlerFunc {
 		startIndex := (page - 1) * recordPerPage
 		startIndex, err = strconv.Atoi(c.Query("startIndex"))
 
-		matchStage := bson.D{{"$match", bson.D{{}}}}
+		matchStage := bson.D{{Key: "$match", Value: bson.D{{}}}}
 
 		projectStage := bson.D{
 			{
-				"$project", bson.D{
-					{"_id", 0},
-					{"total_count", 1},
-					{"user_items", bson.D{{"$slice", []interface{}{"$data", startIndex, recordPerPage}}}},
+				Key: "$project", Value: bson.D{
+					{Key: "_id", Value: 0},
+					{Key: "total_count", Value: 1},
+					{Key: "user_items", Value: bson.D{{Key: "$slice", Value: []interface{}{"$data", startIndex, recordPerPage}}}},
 				},
 			},
 		}
